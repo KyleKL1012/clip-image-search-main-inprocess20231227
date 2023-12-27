@@ -1,0 +1,19 @@
+Passenger: Hi, I've just realized I lost my passport at the airport. Can you help me out?
+
+Helpdesk Assistant: I'm sorry to hear that. I'll do my best to assist you. Could you please provide your name and any other details that might help identify the lost passport?
+
+Passenger: Sure, my name is Jean Dupont. It's a French Passport and the passport number is FR123456. I was around Terminal 2, near the check-in counters, when I last had it.
+
+Helpdesk Assistant: Thank you, Mr. Dupont. I'll check our database for any reported found passports matching your details. In the meantime, have you checked with nearby shops or security, and retraced your steps?
+
+Passenger: Yes, I've done that, but no luck so far. I haven't talked to security yet, though.
+
+Helpdesk Assistant: Okay. I recommend reporting the loss to airport security as they may have information on recently found items. I'll also file a report for your lost French passport. Please provide a contact number and email for updates.
+
+Passenger: Certainly. My contact number is +33 123 456 789, and my email is jean.dupont@email.com.
+
+Helpdesk Assistant: Thank you, Mr. Dupont. I've filed a report for your lost French passport, and we'll do our best to locate it. Visit the airport security office as well; they may provide further assistance. We'll keep you updated via the provided contact information.
+
+Passenger: Thanks for your help. I'll head to the security office now. Please keep me posted on any developments.
+
+Helpdesk Assistant: Certainly, Mr. Dupont. If you have further questions, feel free to contact us. Safe travels.

@@ -1,0 +1,21 @@
+{
+    "mongodb-host": "cluster0.5ufeet5.mongodb.net",
+    "mongodb-port": 27017,
+    "mongodb-database": "pic_test",
+    "mongodb-collection": "images1129",
+
+    "server-host": "0.0.0.0",
+    "server-port": 8000,
+
+    "device": "cpu",
+    "storage-type": "float32",
+
+    "clip-model": "ViT-B/32",
+    "clip-model-download": "./models",
+    "import-image-base": "./data",
+
+    "enable-ocr": false,
+    "ocr-det-model": "ch_PP-OCRv3_det_infer",
+    "ocr-rec-model": "ch_PP-OCRv3_rec_infer",
+    "ocr-model-download": "./models"
+}
