@@ -7,6 +7,7 @@ from datetime import datetime
 
 from pymongo.collection import Collection
 from tqdm import tqdm
+from bson.binary import Binary
 
 import clip_model
 import utils
@@ -44,7 +45,11 @@ def import_single_image(filename: str, model: clip_model.CLIPModel,
     image_mtime = datetime.fromtimestamp(stat.st_mtime)
     image_datestr = image_mtime.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-    # save to mongodb
+    # Open and read the image file
+    with open(new_full_path, 'rb') as f:
+        image_data = f.read()
+
+    # Save to MongoDB
     document = {
         'filename': new_full_path,
         'extension': filetype,
@@ -53,6 +58,7 @@ def import_single_image(filename: str, model: clip_model.CLIPModel,
         'filesize': stat.st_size,
         'date': image_datestr,
         'feature': image_feature.tobytes(),
+        'image_data': Binary(image_data)
     }
 
     x = mongo_collection.insert_one(document)

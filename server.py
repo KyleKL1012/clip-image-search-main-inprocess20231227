@@ -3,7 +3,7 @@ import os
 import time
 import uuid
 from typing import List, Tuple, Any
-
+from io import BytesIO
 import numpy as np
 import torch
 import gradio as gr
@@ -84,28 +84,31 @@ class SearchServer:
     def convert_result_to_gradio(self, filename_list: List[str], score_list: List[float]):
         doc_result = self.mongo_collection.find(
             {"filename": {"$in": filename_list}},
-            {"_id": 0, "filename": 1, "width": 1, "height": 1, "filesize": 1, "date": 1})
-        doc_result = list(doc_result)
-        filename_to_doc_dict = {d['filename']: d for d in doc_result}
-        ret_list = []
-        for filename, score in zip(filename_list, score_list):
-            doc = filename_to_doc_dict[filename]
+            {"_id": 0, "filename": 1, "width": 1, "height": 1, "filesize": 1, "date": 1, "image_data": 1}
+        )
 
+        ret_list = []
+        for doc, score in zip(doc_result, score_list):
             s = ""
             s += "Score = {:.5f}\n".format(score)
-            s += (os.path.basename(filename) + "\n")
+            s += (os.path.basename(doc['filename']) + "\n")
             s += "{}x{}, filesize={}, {}\n".format(
                 doc['width'], doc['height'],
                 doc['filesize'], doc['date']
             )
 
-            ret_list.append((filename, s))
+            # Retrieve the image from MongoDB and convert it to PIL Image
+            image_data = BytesIO(doc['image_data'])
+            image = Image.open(image_data)
+
+            ret_list.append((image, s))
+
         return ret_list
 
     def serve(self):
         server = self
 
-        def _gradio_search_image(query, topn, similarity, minimum_width=1, minimum_height=1):
+        def _gradio_search_image(query, topn, similarity, search_type="text"):
             with torch.no_grad():
                 if isinstance(query, str):
                     if len(query) > 77:
@@ -123,6 +126,17 @@ class SearchServer:
 
             return server.convert_result_to_gradio(filename_list, score_list)
 
+        def _gradio_upload(image: Image.Image) -> str:
+            temp_file_path = "/tmp/" + str(uuid.uuid4()) + ".png"
+            image.save(temp_file_path)
+
+            # TODO: resize image to a smaller size if needed
+            x = import_images.import_single_image(temp_file_path, server.mongo_collection, server.config)
+            os.remove(temp_file_path)
+            if x is None:
+                return "file not uploaded"
+            else:
+                return str(x)
 
         # build gradio app
         with gr.Blocks(theme=gr.themes.Soft()) as demo:
@@ -131,16 +145,25 @@ class SearchServer:
                 with gr.Column(scale=1):
                     prompt_textbox = gr.Textbox(lines=8, label="Prompt")
                     button_prompt = gr.Button("Search Text")
+                with gr.Column(scale=1):
+                    input_image = gr.Image(label="Image", type="pil")
+                    with gr.Row():
+                        button_image = gr.Button("Search Image")
+                        #button_upload = gr.Button("Upload Image")
 
             with gr.Accordion(label="Search Options", open=False):
                 with gr.Row():
                     topn = gr.Number(value=4, label="topn")
                 with gr.Row():
                     similarity = gr.Number(value=0.1, label="similarity", step=0.1)
+            #with gr.Accordion("Debug output", open=False):
+                #debug_output = gr.Textbox(lines=1)
 
             gallery = gr.Gallery(label="results")
 
             button_prompt.click(_gradio_search_image, inputs=[prompt_textbox, topn, similarity], outputs=[gallery])
+            button_image.click(_gradio_search_image, inputs=[input_image, topn, similarity], outputs=[gallery])
+            #button_upload.click(_gradio_upload, inputs=[input_image], outputs=[debug_output])
 
         demo.launch(server_name=config['server-host'], server_port=config['server-port'])
 

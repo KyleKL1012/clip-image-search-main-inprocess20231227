@@ -2,7 +2,7 @@
     "mongodb-host": "cluster0.5ufeet5.mongodb.net",
     "mongodb-port": 27017,
     "mongodb-database": "pic_test",
-    "mongodb-collection": "images1129",
+    "mongodb-collection": "images1229",
 
     "server-host": "0.0.0.0",
     "server-port": 8000,

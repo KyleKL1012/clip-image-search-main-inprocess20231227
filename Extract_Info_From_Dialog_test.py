@@ -37,3 +37,6 @@ def get_itemdesc(input, creds=creds, model_name="meta-llama/llama-2-70b-chat", d
     for response in llm_model.generate([prompt2]):
         generated_text += response.generated_text
     return generated_text
+
+print(get_itemdesc(input='I am writing to report a lost item during my recent visit to the Airport. I have unfortunately misplaced a 1.5 meter long red wool scarf with tassels, and I would greatly appreciate your assistance in locating it.'))
+

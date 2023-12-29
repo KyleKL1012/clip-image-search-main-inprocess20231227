@@ -3,7 +3,7 @@ import os
 import time
 import uuid
 from typing import List, Tuple, Any
-
+from flask import Flask, request, jsonify
 import numpy as np
 import torch
 import gradio as gr
@@ -13,6 +13,10 @@ from Extract_Info_From_Dialog_new import get_itemdesc
 import utils
 from clip_model import get_model
 import import_images
+from flask_cors import CORS
+app = Flask(__name__)
+CORS(app)
+
 
 
 def cosine_similarity(query_feature, feature_list):
@@ -105,54 +109,37 @@ class SearchServer:
     def serve(self):
         server = self
 
-        def _gradio_search_image(query, topn, similarity, minimum_width=1, minimum_height=1, search_type="text"):
+        app = Flask(__name__)
+        CORS(app)
+
+        @app.route('/search', methods=['POST'])
+        def search_image():
+            data = request.get_json()
+            query = data['query']
+            topn = data['topn']
+            similarity = data['similarity']
+
+
             with torch.no_grad():
-                if search_type == "text":
+                if isinstance(query, str):
                     if len(query) > 77:
                         query = get_itemdesc(query)  # Process the query if it exceeds length 77
                     target_feature = server.model.get_text_feature(query)
-                elif search_type == "image":
-                    image_path = query.name  # Extract the filename from the uploaded image
-                    target_feature, image_size = server.model.get_image_feature(image_path)
-                    target_feature = target_feature.astype(config['storage-type'])
-                    target_feature = target_feature.tobytes()
-                    target_feature = np.frombuffer(target_feature, self.config["storage-type"])
+                elif isinstance(query, Image.Image):
+                    image_input = server.model.preprocess(query).unsqueeze(0).to(server.model.device)
+                    image_feature = server.model.model.encode_image(image_input)
+                    target_feature = image_feature.cpu().detach().numpy()
                 else:
-                    assert False, "Invalid search type"
+                    assert False, "Invalid query (input) type"
 
-            filename_list, score_list = server.search_nearest_clip_feature(
-                target_feature, topn=int(topn), similarity=similarity)
+            filename_list, score_list = server.search_nearest_clip_feature(target_feature, topn=int(topn),similarity=similarity)
+            result = server.convert_result_to_gradio(filename_list, score_list)
+            return jsonify(result)
+            print ('result',result)
 
-            return server.convert_result_to_gradio(filename_list, score_list)
-
-
-        # build gradio app
-        with gr.Blocks(theme=gr.themes.Soft()) as demo:
-            heading = gr.Markdown("# Lost Item Search Demo")
-            with gr.Row():
-                with gr.Column(scale=1):
-                    prompt_textbox = gr.Textbox(lines=8, label="Prompt")
-                    button_prompt = gr.Button("Search Text")
-                with gr.Column(scale=1):
-                    image_upload = gr.File(label="Upload Image")
-                    button_image = gr.Button("Search Image")
-
-            with gr.Accordion(label="Search Options", open=False):
-                with gr.Row():
-                    topn = gr.Number(value=4, label="topn")
-                with gr.Row():
-                    similarity = gr.Number(value=0.1, label="similarity", step=0.1)
-
-            gallery = gr.Gallery(label="results")
-
-            button_prompt.click(_gradio_search_image, inputs=[prompt_textbox, topn, similarity], outputs=[gallery])
-            button_image.click(_gradio_search_image, inputs=[image_upload, topn, similarity], outputs=[gallery])
-
-        demo.launch(server_name=config['server-host'], server_port=config['server-port'])
-
+        app.run(host='0.0.0.0', port=5000)
 
 if __name__ == "__main__":
     config = utils.get_config()
     server = SearchServer(config)
-
     server.serve()

@@ -110,7 +110,6 @@ class SearchServer:
         server = self
 
         app = Flask(__name__)
-        app = Flask(__name__)
         CORS(app)
 
         @app.route('/search', methods=['POST'])
