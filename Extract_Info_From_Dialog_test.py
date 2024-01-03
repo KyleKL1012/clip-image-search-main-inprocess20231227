@@ -24,16 +24,16 @@ def call_llm_directly(input, creds=creds, model_name="meta-llama/llama-2-70b-cha
     return generated_text
 
 
-def get_itemdesc(input, creds=creds, model_name="meta-llama/llama-2-70b-chat", decoding_method="sample", max_new_tokens=100, temperature=0.1):
+def get_itemdesc(input, creds=creds, model_name="meta-llama/llama-2-70b-chat", decoding_method="sample", max_new_tokens=2000, temperature=0.1):
     params = GenerateParams(decoding_method=decoding_method, max_new_tokens=max_new_tokens, temperature=temperature)
     model_name = model_name
     llm_model = Model(model=model_name, params=params, credentials=creds)
     generated_text = ''
     template = ''
     summarization1 = call_llm_directly(input,creds=creds)
-    prompt2 = f"Imagine you are a Lost and Found help desk assistant at an airport. Your colleague has summarized a dialog recording in {summarization1}. \
-            Read the content carefully and accurately extract entities, focusing solely on the lost item. For the answer, retreive the item itself and necessary features, incorporate the item and its external features into one sentence, limiting it to 50 words. Remember the answer should be only one sentence without using any template.\
-            Do not repeat the template. Do not include other information such as location, or passenger's name, or passenger's contact information."
+    prompt2 = f"Imagine you are a Lost and Found help desk assistant at an airport. Your colleague has summarized a dialog recording about a lost item in {summarization1}. \
+            Read the content carefully and accurately extract information about the lost item. For the answer, provide a concise description of the item and any relevant distinguishing features, all within a single sentence limited to 50 words. \
+            Avoid using templates and do not include extraneous details such as location, passenger's name, or contact information."
     for response in llm_model.generate([prompt2]):
         generated_text += response.generated_text
     return generated_text
