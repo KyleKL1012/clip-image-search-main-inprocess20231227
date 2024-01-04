@@ -14,8 +14,11 @@ import utils
 from clip_model import get_model
 import import_images
 from flask_cors import CORS
+from PIL import Image
+import io
 app = Flask(__name__)
 CORS(app)
+
 
 
 
@@ -112,13 +115,12 @@ class SearchServer:
         app = Flask(__name__)
         CORS(app)
 
-        @app.route('/search', methods=['POST'])
+        @app.route('/textSearch', methods=['POST'])
         def search_image():
             data = request.get_json()
             query = data['query']
             topn = data['topn']
             similarity = data['similarity']
-
 
             with torch.no_grad():
                 if isinstance(query, str):
@@ -135,10 +137,28 @@ class SearchServer:
             filename_list, score_list = server.search_nearest_clip_feature(target_feature, topn=int(topn),similarity=similarity)
             result = server.convert_result_to_gradio(filename_list, score_list)
             return jsonify(result)
-            print ('result',result)
 
+        @app.route('/imageSearch', methods=['POST'])
+        def search_imagetwo():
+            query = Image.open(request.files.get('file'))
+            topn= request.form.get('topn')
+            similarity=float(request.form.get('similarity'))
+            with torch.no_grad():
+                if isinstance(query, str):
+                    if len(query) > 77:
+                        query = get_itemdesc(query)  # Process the query if it exceeds length 77
+                    target_feature = server.model.get_text_feature(query)
+                elif isinstance( query, Image.Image):
+                    image_input = server.model.preprocess(query).unsqueeze(0).to(server.model.device)
+                    image_feature = server.model.model.encode_image(image_input)
+                    target_feature = image_feature.cpu().detach().numpy()
+                else:
+                    assert False, "Invalid query (input) type"
+
+            filename_list, score_list = server.search_nearest_clip_feature(target_feature, topn=int(topn),similarity=similarity)
+            result = server.convert_result_to_gradio(filename_list, score_list)
+            return jsonify(result)
         app.run(host='0.0.0.0', port=5000)
-
 if __name__ == "__main__":
     config = utils.get_config()
     server = SearchServer(config)
